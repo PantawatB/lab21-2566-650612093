@@ -82,30 +82,48 @@ export const POST = async (request) => {
 
   const prisma = getPrisma();
   //1.check if courseNo does not exist on database
+  const course = await prisma.course.findUnique({
+    where: {
+      courseNo,
+    },
+  });
   //send this response back if courseNo does not exist
-  // return NextResponse.json(
-  //   {
-  //     ok: false,
-  //     message: "Course number does not exist",
-  //   },
-  //   { status: 400 }
-  // );
+  if (!course) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "course number does not exist",
+      },
+      { status: 404 }
+    );
+  }
 
   //2.check if such student enroll that course already (both "studentId" and "courseNo" exists on enrollment collection)
-  // return NextResponse.json(
-  //   {
-  //     ok: false,
-  //     message: "You already registered this course",
-  //   },
-  //   { status: 400 }
-  // );
+  const enrollCheck = await prisma.enrollment.findUnique({
+    where: {
+      courseNo_studentId: {
+        studentId,
+        courseNo,
+      },
+    },
+  });
 
-  //3.if conditions above are not met, perform inserting data here
-  // await prisma.enrollment.create({
-  //   data:{
-  //     ...
-  //   }
-  // })
+  if (enrollCheck) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "You already registered this course",
+      },
+      { status: 400 }
+    );
+  }
+
+  await prisma.enrollment.create({
+    data: {
+      studentId,
+      courseNo,
+    },
+  });
 
   return NextResponse.json({
     ok: true,
